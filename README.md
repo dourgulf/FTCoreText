@@ -1,6 +1,6 @@
 1. It's from FTCoreText
 2. fixed much bugs
-3. add remove imge support(depend on SDWebImage library)
+3. add remote imge support(depend on SDWebImage library)
 4. default tag has been change, please read the source code of FTCoreTextView.m
 
 Node:
