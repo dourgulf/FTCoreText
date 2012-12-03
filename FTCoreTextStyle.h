@@ -61,8 +61,6 @@ typedef uint8_t FTCoreTextAlignement;
 //if NO, the paragraph styling of the enclosing style is used. Default is YES.
 @property (nonatomic, assign) BOOL applyParagraphStyling;
 
-//deprecated
-@property (nonatomic, assign) __deprecated CGFloat spaceBetweenParagraphs;
 
 + (id)styleWithName:(NSString *)name;
 

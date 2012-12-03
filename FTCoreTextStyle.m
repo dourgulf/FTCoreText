@@ -24,9 +24,6 @@
 @synthesize leading = _leading;
 @synthesize maxLineHeight = _maxLineHeight;
 @synthesize minLineHeight = _minLineHeight;
-@synthesize spaceBetweenParagraphs = _spaceBetweenParagraphs;
-
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 - (id)init
 {
@@ -52,18 +49,6 @@
     FTCoreTextStyle *style = [[FTCoreTextStyle alloc] init];
     [style setName:name];
     return [style autorelease];
-}
-
-- (void)setSpaceBetweenParagraphs:(CGFloat)spaceBetweenParagraphs
-{
-	UIEdgeInsets edgeInset = _paragraphInset;
-	edgeInset.bottom = spaceBetweenParagraphs;
-	self.paragraphInset = edgeInset;
-}
-
-- (CGFloat)spaceBetweenParagraphs
-{
-	return _paragraphInset.bottom;
 }
 
 - (UIFont *)bulletFont

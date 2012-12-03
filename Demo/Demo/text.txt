@@ -1,0 +1,19 @@
+This is my avatar:
+[img]https://secure.gravatar.com/avatar/5f5df255255cced176b7e2705700fa51?s=140&d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png[/img]
+and the following line is the link of this project in Github:[link]https://github.com/dourgulf/FTCoreText|^|FTCoreText[/link]
+and the README text
+1. It's from FTCoreText
+2. fixed much bugs
+3. add remote imge support(depend on SDWebImage library)
+4. default tag has been change, please read the source code of FTCoreTextView.m
+
+Node:
+There is hack within the code. 
+When the image is remote address, it's tag text will be change to "\n"
+and it will display correctly
+If the image is a local file, it's tag text will be change to some space.
+and the image will insert into the text, but if it's a large image, 
+it will cover the text.
+
+I can't find a good idea to solve this problem.
+

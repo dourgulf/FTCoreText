@@ -18,6 +18,7 @@
 
 NSString * const FTCoreTextTagDefault = @"default";
 NSString * const FTCoreTextTagImage = @"img";
+NSString * const FTCoreTextTagSmile = @"smile";
 NSString * const FTCoreTextTagBullet = @"quote";
 NSString * const FTCoreTextTagPage = @"page";
 NSString * const FTCoreTextTagLink = @"link";
@@ -227,7 +228,16 @@ typedef enum {
 	if (index != NSNotFound) {
 		return [_supernode subnodeAtIndex:index + 1];
 	}
-	return nil;	
+	return nil;
+}
+
+- (id)init
+{
+    self = [super init];
+    if (self) {
+        self.isClosed = YES;
+    }
+    return self;
 }
 
 - (void)dealloc
@@ -292,8 +302,8 @@ NSInteger rangeSort(NSString *range1, NSString *range2, void *context)
 
 CTFontRef CTFontCreateFromUIFont(UIFont *font)
 {
-    CTFontRef ctFont = CTFontCreateWithName((CFStringRef)font.fontName, 
-                                            font.pointSize, 
+    CTFontRef ctFont = CTFontCreateWithName((CFStringRef)font.fontName,
+                                            font.pointSize,
                                             NULL);
     return ctFont;
 }
@@ -302,13 +312,13 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 {
 	switch (alignment) {
 		case FTCoreTextAlignementCenter:
-			return UITextAlignmentCenter;
+			return NSTextAlignmentCenter;
 			break;
 		case FTCoreTextAlignementRight:
-			return UITextAlignmentRight;
-			break;			
+			return NSTextAlignmentRight;
+			break;
 		default:
-			return UITextAlignmentLeft;
+			return NSTextAlignmentLeft;
 			break;
 	}
 }
@@ -332,7 +342,9 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 }
 
 - (BOOL)isValidTagName:(NSString *)tagKey {
-    return [_defaultsTags objectForKey:tagKey] != nil;
+    
+    return [_defaultsTags objectForKey:tagKey] != nil ||
+    [_styles objectForKey:tagKey] != nil;
 }
 
 - (void)didMakeChanges
@@ -342,6 +354,13 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 }
 
 #pragma mark - UI related
+- (NSArray *)allImageNames {
+    NSMutableArray *imageNames = [[NSMutableArray alloc] initWithCapacity:_images.count];
+    for (FTCoreTextNode *node in _images) {
+        [imageNames addObject:node.imageName];
+    }
+    return [imageNames autorelease];
+}
 
 - (NSDictionary *)dataForPoint:(CGPoint)point
 {
@@ -481,6 +500,135 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 
 #pragma mark - Text processing
 
+- (NSString *)summaryText {
+    if (_text.length>10) {
+        return [_text substringToIndex:10];
+    }
+    else {
+        return _text;
+    }
+}
+
+- (NSString *)spaceForEmotionImage:(UIImage *)image withFont:(UIFont *)font{
+    NSMutableString *str = [[NSMutableString alloc] init];
+    [str appendString:@" "];
+    CGFloat spaceWidth = [str sizeWithFont:font].width;
+    int count = (int)(image.size.height/spaceWidth);
+    for (int i=0; i<count; ++i) {
+        [str appendString:@" "];
+    }
+    [str appendString:@" "];
+    return [str autorelease];
+}
+
+- (void)processLinkClose:(FTCoreTextNode *)currentSupernode tagRange:(NSRange)tagRange processedString:(NSMutableString *)processedString
+{
+    //replace active string with url text
+    NSRange elementContentRange = NSMakeRange(currentSupernode.startLocation, tagRange.location - currentSupernode.startLocation);
+    NSString * elementContent = [processedString substringWithRange:elementContentRange];
+    NSRange pipeRange = [elementContent rangeOfString:@"|^|"];
+    NSString * urlString = nil;
+    NSString * urlDescription = nil;
+    if (pipeRange.location != NSNotFound)
+    {
+        urlString = [elementContent substringToIndex:pipeRange.location];
+        urlDescription = [elementContent substringFromIndex:pipeRange.location + 3];
+        urlDescription = [urlDescription stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (urlDescription.length == 0)
+        {
+            urlDescription = urlString;
+        }
+    }
+    else {
+        urlString = elementContent;
+        urlDescription = elementContent;
+    }
+    if ([urlDescription hasPrefix:@"[img]"] && [urlDescription hasSuffix:@"[/img]"]) {
+        //
+        urlDescription = urlString;
+    }
+    
+    [processedString replaceCharactersInRange:NSMakeRange(elementContentRange.location, elementContentRange.length + tagRange.length) withString:urlDescription];
+    if (![urlString hasPrefix:@"http://"]) {
+        urlString = [NSString stringWithFormat:@"http://%@", urlString];
+    }
+    NSURL * url = [NSURL URLWithString:urlString];
+    NSRange urlDescriptionRange = NSMakeRange(elementContentRange.location, [urlDescription length]);
+    if (url) {
+        [_URLs setObject:url forKey:NSStringFromRange(urlDescriptionRange)];
+    }
+    
+    currentSupernode.styleRange = urlDescriptionRange;
+}
+
+- (void)processImageClose:(FTCoreTextNode *)currentSupernode tagRange:(NSRange)tagRange processedString:(NSMutableString *)processedString
+{
+    //replace active string with emptySpace
+    NSRange elementContentRange = NSMakeRange(currentSupernode.startLocation, tagRange.location - currentSupernode.startLocation);
+    NSString * elementContent = [processedString substringWithRange:elementContentRange];
+    
+    UIImage *img = nil;
+    NSString *lines = @"";
+    if ([elementContent hasPrefix:@"http://"] ||
+        [elementContent hasPrefix:@"https://"])
+    {
+        lines = @"\n";
+        // image from http
+        // try to load from cache
+        img = [[SDImageCache sharedImageCache] imageFromKey:elementContent];
+        if (!img) {
+            // not in cache, load it from URL
+            img = [UIImage imageNamed:@"FTCoreText.bundle/images/loading"];
+            if (!img) {
+                NSLog(@"the placeholder image \"loading.png\" not found");
+            }
+            NSURL *imgURL = [NSURL URLWithString:elementContent];
+            NSLog(@"loading image %@", elementContent);
+            // download it
+            id successblock = ^(UIImage *image) {
+                NSLog(@"loaded %@", elementContent);
+                currentSupernode.image = image;
+                currentSupernode.style.leading = image.size.height;
+                [self didMakeChanges];
+                if ([self superview]) [self setNeedsDisplay];
+            };
+            id failedblock = ^(NSError *error) {
+                NSLog(@"load image failed %@", elementContent);
+            };
+            [[SDWebImageManager sharedManager] downloadWithURL:imgURL
+                                                      delegate:self
+                                                       options:0
+                                                       success:successblock
+                                                       failure:failedblock];
+        }
+    }
+    else
+    {
+        // local image, normally it's an emotion image
+        img = [UIImage imageNamed:elementContent];
+        if (img) {
+            lines = [self spaceForEmotionImage:img withFont:currentSupernode.style.font];
+        }
+        else {
+            // if can't load the local image, just show the element.
+            lines = elementContent;
+        }
+    }
+    if (img) {
+        currentSupernode.style.leading = img.size.height;
+    }
+    else {
+        currentSupernode.image = nil;
+        NSLog(@"FTCoreTextView - Couldn't find image '%@' in main bundle", elementContent);
+    }
+    currentSupernode.image = img;
+    currentSupernode.imageName = elementContent;
+    [processedString replaceCharactersInRange:NSMakeRange(elementContentRange.location, elementContentRange.length + tagRange.length) withString:lines];
+    
+    [_images addObject:currentSupernode];
+    currentSupernode.styleRange = NSMakeRange(elementContentRange.location, lines.length);
+}
+
 /*!
  * @abstract remove the tags from the text and create a tree representation of the text
  *
@@ -495,7 +643,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 	
 	FTCoreTextNode * rootNode = [[FTCoreTextNode new] autorelease];
 	rootNode.style = [_styles objectForKey:[self defaultTagNameForKey:FTCoreTextTagDefault]];
-
+    
 	FTCoreTextNode *currentSupernode = rootNode;
 	
 	NSMutableString *processedString = [NSMutableString stringWithString:_text];
@@ -503,14 +651,14 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 	BOOL finished = NO;
 	NSRange remainingRange = NSMakeRange(0, [processedString length]);
 	
-	NSString *regEx = @"\\[(/){0,1}.*?( /){0,1}\\]";
+	NSString *regEx = @"\\[[^\\[](/){0,1}.*?( /){0,1}\\]";
     
 	while (!finished) {
 		NSRange tagRange = [processedString rangeOfString:regEx options:NSRegularExpressionSearch range:remainingRange];
 		if (tagRange.location == NSNotFound) {
 			if (currentSupernode != rootNode && !currentSupernode.isClosed) {
-                NSLog(@"FTCoreTextView(%p) - Can't find close tag '%@' which at position %d - \n%@",
-                      self, currentSupernode.style.name, currentSupernode.startLocation, _text);
+                NSLog(@"FTCoreTextView - Can't find close tag '%@' which at position %d - \n%@",
+                      currentSupernode.style.name, currentSupernode.startLocation, [self summaryText]);
                 // try to cloase the tag.
                 NSString *closeTag = [NSString stringWithFormat:@"[/%@]", currentSupernode.style.name];
                 [processedString appendString:closeTag];
@@ -539,7 +687,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
         tagName = [tagName stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"[ /]"]];
         // if tag name not register, ignore it and advance
 		if (![self isValidTagName:tagName]) {
-            remainingRange.location = tagRange.location+tagRange.length;
+            remainingRange.location = tagRange.location+1;
             remainingRange.length = [processedString length] - remainingRange.location;
             continue;
         }
@@ -552,14 +700,13 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
             case FTCoreTextTagTypeOpen:
             {
                 if (currentSupernode.isLink || currentSupernode.isImage) {
-                    NSLog(@"FTCoreTextView(%p) - You can't open a new tag inside a '%@' tag - \n%@",
-                          self, currentSupernode.style.name, _text);
+                    NSLog(@"FTCoreTextView - You can't open a new tag inside a '%@' tag - \n%@",
+                          currentSupernode.style.name, [self summaryText]);
                     // skip this tag
                     remainingRange.location = tagRange.location+tagRange.length;
                     remainingRange.length = [processedString length] - remainingRange.location;
                     continue;
                 }
-                
                 FTCoreTextNode * newNode = [FTCoreTextNode new];
                 newNode.style = style;
                 newNode.startLocation = tagRange.location;
@@ -589,7 +736,9 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
                     [newNode addSubnode:bulletNode];
                     [bulletNode release];
                 }
-                else if ([tagName isEqualToString:[self defaultTagNameForKey:FTCoreTextTagImage]]) {
+                else if ([tagName isEqualToString:[self defaultTagNameForKey:FTCoreTextTagImage]] ||
+                         [tagName isEqualToString:[self defaultTagNameForKey:FTCoreTextTagSmile]])
+                {
                     newNode.isImage = YES;
                 }
                 
@@ -598,111 +747,38 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
                 [newNode release];
                 
                 currentSupernode = newNode;
-                
+                currentSupernode.isClosed = NO;
                 remainingRange.location = tagRange.location;
-                remainingRange.length = [processedString length] - tagRange.location;
+                remainingRange.length = processedString.length - tagRange.location;
             }
                 break;
             case FTCoreTextTagTypeClose:
             {
                 if ((![currentSupernode.style.name isEqualToString:[self defaultTagNameForKey:FTCoreTextTagDefault]] && ![currentSupernode.style.name isEqualToString:tagName]) ) {
-                    NSLog(@"FTCoreTextView(%p) - Closed tag '%@' not match open tag '%@'-\n%@",
-                          self, tagName, currentSupernode.style.name, _text);
+                    NSLog(@"FTCoreTextView - Closed tag '%@' not match open tag '%@'-\n%@",
+                          tagName, currentSupernode.style.name, [self summaryText]);
                     // skip this tag
                     remainingRange.location = tagRange.location+tagRange.length;
-                    remainingRange.length = [processedString length] - remainingRange.location;
-
+                    remainingRange.length = processedString.length - remainingRange.location;
+                    
+                    continue;
+                }
+                if (currentSupernode.isClosed) {
+                    // no open tag
+                    NSLog(@"FTCoreTextView - Closed tag '%@' havn't open tag-\n%@",
+                          tagName, [self summaryText]);
+                    remainingRange.location = tagRange.location += tagRange.length;
+                    remainingRange.length = processedString.length - remainingRange.location;
                     continue;
                 }
                 
                 currentSupernode.isClosed = YES;
                 
                 if (currentSupernode.isLink) {
-                    //replace active string with url text
-                    NSRange elementContentRange = NSMakeRange(currentSupernode.startLocation, tagRange.location - currentSupernode.startLocation);
-                    NSString * elementContent = [processedString substringWithRange:elementContentRange];
-                    NSRange pipeRange = [elementContent rangeOfString:@"|^|"];
-                    NSString * urlString = nil;
-                    NSString * urlDescription = nil;
-                    if (pipeRange.location != NSNotFound) {
-                        urlString = [elementContent substringToIndex:pipeRange.location];
-                        urlDescription = [elementContent substringFromIndex:pipeRange.location + 3];
-                        NSString *urlDescription2 = [urlDescription stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-                        if (urlDescription2.length == 0) {
-                            urlDescription = urlString;
-                        }
-                    }
-                    else {
-                        urlString = elementContent;
-                        urlDescription = elementContent;
-                    }
-
-                    [processedString replaceCharactersInRange:NSMakeRange(elementContentRange.location, elementContentRange.length + tagRange.length) withString:urlDescription];
-                    if (![urlString hasPrefix:@"http://"]) {
-                        urlString = [NSString stringWithFormat:@"http://%@", urlString];
-                    }
-                    NSURL * url = [NSURL URLWithString:urlString];
-                    NSRange urlDescriptionRange = NSMakeRange(elementContentRange.location, [urlDescription length]);
-                    if (url) {
-                        [_URLs setObject:url forKey:NSStringFromRange(urlDescriptionRange)];
-                    }
-                    
-                    currentSupernode.styleRange = urlDescriptionRange;
+                    [self processLinkClose:currentSupernode tagRange:tagRange processedString:processedString];
                 }
                 else if (currentSupernode.isImage) {
-                    //replace active string with emptySpace
-                    NSRange elementContentRange = NSMakeRange(currentSupernode.startLocation, tagRange.location - currentSupernode.startLocation);
-                    NSString * elementContent = [processedString substringWithRange:elementContentRange];
-                    
-                    UIImage *img = nil;
-                    NSString *lines = @"";
-                    if ([elementContent hasPrefix:@"http://"] ||
-                        [elementContent hasPrefix:@"https://"]) {
-                        lines = @"\n";
-                        // image from http
-                        // try to load from cache
-                        img = [[SDImageCache sharedImageCache] imageFromKey:elementContent];
-                        if (!img) {
-                            // not in cache, load it from URL
-                            img = [UIImage imageNamed:@"loading"];
-                            NSURL *imgURL = [NSURL URLWithString:elementContent];
-                            NSLog(@"loading image %@", elementContent);
-                            // download it
-                            id successblock = ^(UIImage *image) {
-                                NSLog(@"loaded %@", elementContent);
-                                currentSupernode.image = image;
-                                currentSupernode.style.leading = image.size.height;
-                                [self didMakeChanges];
-                                if ([self superview]) [self setNeedsDisplay];
-                            };
-                            id failedblock = ^(NSError *error) {
-                                NSLog(@"load image failed %@", elementContent);
-                            };
-                            [[SDWebImageManager sharedManager] downloadWithURL:imgURL
-                                                                      delegate:self
-                                                                       options:0
-                                                                       success:successblock
-                                                                       failure:failedblock];
-                        }
-                    }
-                    else
-                    {
-                        lines = @"       ";;
-                        img = [UIImage imageNamed:elementContent];
-                    }
-                    if (img) {
-                        currentSupernode.image = img;
-                    }
-                    else {
-                        NSLog(@"FTCoreTextView :%@ - Couldn't find image '%@' in main bundle", self, NSStringFromRange(elementContentRange));
-                        [processedString replaceCharactersInRange:tagRange withString:@""];
-                    }
-                    currentSupernode.style.leading = img.size.height;
-                    currentSupernode.imageName = elementContent;
-                    [processedString replaceCharactersInRange:NSMakeRange(elementContentRange.location, elementContentRange.length + tagRange.length) withString:lines];
-                    
-                    [_images addObject:currentSupernode];
-                    currentSupernode.styleRange = NSMakeRange(elementContentRange.location, lines.length);
+                    [self processImageClose:currentSupernode tagRange:tagRange processedString:processedString];
                 }
                 else {
                     currentSupernode.styleRange = NSMakeRange(currentSupernode.startLocation, tagRange.location - currentSupernode.startLocation);
@@ -713,7 +789,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
                     [processedString insertString:currentSupernode.style.appendedCharacter atIndex:currentSupernode.styleRange.location + currentSupernode.styleRange.length];
                     NSRange newStyleRange = currentSupernode.styleRange;
                     newStyleRange.length += [currentSupernode.style.appendedCharacter length];
-                    currentSupernode.styleRange = newStyleRange;							
+                    currentSupernode.styleRange = newStyleRange;
                 }
                 
                 if (style.paragraphInset.top > 0) {
@@ -751,7 +827,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
                 newNode.style = style;
                 [processedString replaceCharactersInRange:tagRange withString:newNode.style.appendedCharacter];
                 newNode.styleRange = NSMakeRange(tagRange.location, [newNode.style.appendedCharacter length]);
-                [currentSupernode addSubnode:newNode];	
+                [currentSupernode addSubnode:newNode];
                 [newNode release];
                 
                 remainingRange.location = tagRange.location;
@@ -759,7 +835,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
             }
                 break;
         }
-	}	
+	}
 	
 	rootNode.styleRange = NSMakeRange(0, [processedString length]);
 	
@@ -863,7 +939,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 		[*attributedString addAttribute:(id)kCTUnderlineStyleAttributeName
 								  value:(id)underline
 								  range:styleRange];
-	}	
+	}
 	
 	CTFontRef ctFont = CTFontCreateFromUIFont(style.font);
 	
@@ -872,6 +948,12 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 							  range:styleRange];
 	CFRelease(ctFont);
 	
+    // disable kerning
+    NSNumber *kern = [NSNumber numberWithFloat:0];
+    [*attributedString addAttribute:(id)kCTKernAttributeName
+                              value:kern
+                              range:styleRange];
+    
 	CTTextAlignment alignment = style.textAlignment;
 	CGFloat maxLineHeight = style.maxLineHeight;
 	CGFloat minLineHeight = style.minLineHeight;
@@ -930,7 +1012,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 		
 		CTParagraphStyleRef paragraphStyle = CTParagraphStyleCreate(settings, numberOfSettings);
 		[*attributedString addAttribute:(id)kCTParagraphStyleAttributeName
-								  value:(id)paragraphStyle 
+								  value:(id)paragraphStyle
 								  range:styleRange];
 		CFRelease(tabStops);
 		CFRelease(paragraphStyle);
@@ -975,7 +1057,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 	[self setUserInteractionEnabled:YES];
 	
 	FTCoreTextStyle *defaultStyle = [FTCoreTextStyle styleWithName:FTCoreTextTagDefault];
-	[self addStyle:defaultStyle];	
+	[self addStyle:defaultStyle];
 	
 	FTCoreTextStyle *linksStyle = [defaultStyle copy];
 	linksStyle.color = [UIColor blueColor];
@@ -983,9 +1065,11 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 	[_styles setValue:linksStyle forKey:linksStyle.name];
 	[linksStyle release];
 	
-	_defaultsTags = [[NSMutableDictionary dictionaryWithObjectsAndKeys:FTCoreTextTagDefault, FTCoreTextTagDefault,
+	_defaultsTags = [[NSMutableDictionary dictionaryWithObjectsAndKeys:
+                      FTCoreTextTagDefault, FTCoreTextTagDefault,
 					  FTCoreTextTagLink, FTCoreTextTagLink,
 					  FTCoreTextTagImage, FTCoreTextTagImage,
+                      FTCoreTextTagSmile, FTCoreTextTagSmile,
 					  FTCoreTextTagPage, FTCoreTextTagPage,
 					  FTCoreTextTagBullet, FTCoreTextTagBullet,
 					  nil] retain];
@@ -1105,7 +1189,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
         if ([_images count] > 0) {
             [self drawImages];
         }
-
+        
         if (_shadowColor) {
             CGContextSetShadowWithColor(context, _shadowOffset, 0.f, _shadowColor.CGColor);
         }
@@ -1172,10 +1256,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
                 CTTextAlignment alignment = imageNode.style.textAlignment;
                 
                 UIImage *img = imageNode.image;
-                if (!img) {
-                    img = [UIImage imageNamed:imageNode.imageName];
-                }
-                
+
                 if (img) {
                     if (alignment == kCTRightTextAlignment)
                         imgBounds.origin.x = (self.frame.size.width - img.size.width);
@@ -1184,7 +1265,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
                     
                     imgBounds.size = img.size;
                     
-                    // adjusting frame @TODO need more tes
+                    // adjusting frame @TODO need more test
                     UIEdgeInsets insets = imageNode.style.paragraphInset;
                     if (alignment != kCTCenterTextAlignment) {
                         if (alignment == kCTLeftTextAlignment) {

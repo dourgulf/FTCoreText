@@ -24,10 +24,11 @@
 /* These constants are default tag names recognised by FTCoreTextView */
 
 extern NSString * const FTCoreTextTagDefault;	//It is the default applied to the whole text. Markups is not needed on the source text
-extern NSString * const FTCoreTextTagImage;		//Define style for images. Respond to markup <_image>imageNameInMainBundle.extension</_image> in the source text.
-extern NSString * const FTCoreTextTagBullet;	//Define styles for bullets. Respond to markup <_bullet>Content indented with a bullet</_bullet>
-extern NSString * const FTCoreTextTagPage;		//Divide the text in pages. Respond to markup <_page/>
-extern NSString * const FTCoreTextTagLink;		//Define style for links. Respond to markup <_link>link URL|link replacement name</_link>
+extern NSString * const FTCoreTextTagImage;		//Define style for images. 
+extern NSString * const FTCoreTextTagSmile;		//Define style for images.
+extern NSString * const FTCoreTextTagBullet;	//Define styles for bullets.
+extern NSString * const FTCoreTextTagPage;		//Divide the text in pages.
+extern NSString * const FTCoreTextTagLink;		//Define style for links.
 
 /* These constants are used in the dictionary argument of the delegate method -coreTextView:receivedTouchOnData: */
 extern NSString * const FTCoreTextDataType;
@@ -78,6 +79,8 @@ extern NSString * const FTCoreTextDataAttributes;
 - (void)removeAllStyles;
 
 - (NSArray *)styles;
+
+- (NSArray *)allImageNames;
 
 + (NSString *)stripTagsForString:(NSString *)string;
 + (NSArray *)pagesFromText:(NSString *)string;
