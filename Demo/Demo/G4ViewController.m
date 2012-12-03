@@ -2,7 +2,7 @@
 //  G4ViewController.m
 //  Demo
 //
-//  Created by Dawen Rie on 12-12-3.
+//  Created by dourgulf on 12-12-3.
 //  Copyright (c) 2012年 G4Next. All rights reserved.
 //
 
@@ -38,6 +38,7 @@
     // Dispose of any resources that can be recreated.
 }
 
+// style
 - (NSArray *)coreTextStyle{
     static NSMutableArray *styleArrays = nil;
     if (styleArrays == nil) {
@@ -69,6 +70,7 @@
     return styleArrays;
 }
 
+// text
 - (NSString *)textForView
 {
     return [NSString stringWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"text" ofType:@"txt"] encoding:NSUTF8StringEncoding error:nil];

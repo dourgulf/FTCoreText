@@ -2,7 +2,7 @@
 //  G4ViewController.h
 //  Demo
 //
-//  Created by Dawen Rie on 12-12-3.
+//  Created by dourgulf on 12-12-3.
 //  Copyright (c) 2012年 G4Next. All rights reserved.
 //
 
