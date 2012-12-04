@@ -3,12 +3,12 @@
 3. add remote imge support(depend on SDWebImage library)
 4. default tag has been change, please read the source code of FTCoreTextView.m
 
-Node:
-There is hack within the code. 
-When the image is remote address, it's tag text will be change to "\n"
-and it will display correctly
-If the image is a local file, it's tag text will be change to some space.
-and the image will insert into the text, but if it's a large image, 
-it will cover the text.
+Usage：
+1. add FTCoreText*
+2. add SDWebImage(you can download it from github, or find it in the demo folder)
+3. add Frameworks:CoreText, CFNetwork, ImageIO
 
-I can't find a good idea to solve this problem.
+Restrict:
+1. Every remote image must be display in an individual line
+2. Only every small local image support for display with text in the same line, 
+   it usually is an emotion image.
