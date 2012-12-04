@@ -1,8 +1,12 @@
 This is my avatar:
 [img]https://secure.gravatar.com/avatar/5f5df255255cced176b7e2705700fa51?s=140&d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png[/img]
-the image must be in a new line
+Every remote image must be in a new line
 [img]https://secure.gravatar.com/avatar/5f5df255255cced176b7e2705700fa51?s=140&d=https://a248.e.akamai.net/assets.github.com%2Fimages%2Fgravatars%2Fgravatar-user-420.png[/img]
+
+only very small image[smile]localimage1.gif[/smile]can be display with text[smile]localimage1.gif[/smile][smile]localimage1.gif[/smile][smile]localimage1.gif[/smile][smile]localimage1.gif[/smile][smile]localimage1.gif[/smile].
+
 and the following line is the link of this project in Github:[link]https://github.com/dourgulf/FTCoreText|^|FTCoreText[/link]
+
 and the README text
 1. It's from FTCoreText
 2. fixed much bugs

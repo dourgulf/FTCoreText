@@ -60,6 +60,14 @@
         [styleArrays addObject:imageStyle];
         [imageStyle release];
         
+        FTCoreTextStyle *smileStyle = [FTCoreTextStyle new];
+        smileStyle.paragraphInset = UIEdgeInsetsMake(0,0,0,0);
+        smileStyle.font = [UIFont systemFontOfSize:16.0f];
+        smileStyle.name = FTCoreTextTagSmile;
+        smileStyle.textAlignment = FTCoreTextAlignementJustified;
+        [styleArrays addObject:smileStyle];
+        [smileStyle release];
+        
         FTCoreTextStyle *linkStyle = [defaultStyle copy];
         linkStyle.name = FTCoreTextTagLink;
         linkStyle.font = [UIFont systemFontOfSize:16.0f];

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		890ED26E166DCE1D00D226BB /* localimage1.gif in Resources */ = {isa = PBXBuildFile; fileRef = 890ED26D166DCE1D00D226BB /* localimage1.gif */; };
 		896158CF166C955C00776B4D /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 896158CE166C955C00776B4D /* UIKit.framework */; };
 		896158D1166C955C00776B4D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 896158D0166C955C00776B4D /* Foundation.framework */; };
 		896158D3166C955C00776B4D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 896158D2166C955C00776B4D /* CoreGraphics.framework */; };
@@ -35,6 +36,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		890ED26D166DCE1D00D226BB /* localimage1.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = localimage1.gif; sourceTree = "<group>"; };
 		896158CA166C955C00776B4D /* Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		896158CE166C955C00776B4D /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		896158D0166C955C00776B4D /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -137,6 +139,7 @@
 			children = (
 				89615905166C9A0300776B4D /* SDWebImage */,
 				896158FB166C960600776B4D /* text.txt */,
+				890ED26D166DCE1D00D226BB /* localimage1.gif */,
 				896158DD166C955C00776B4D /* G4AppDelegate.h */,
 				896158DE166C955C00776B4D /* G4AppDelegate.m */,
 				896158E6166C955C00776B4D /* G4ViewController.h */,
@@ -246,6 +249,7 @@
 				896158EB166C955C00776B4D /* G4ViewController.xib in Resources */,
 				896158FC166C960600776B4D /* text.txt in Resources */,
 				89615926166C9BDA00776B4D /* FTCoreText.bundle in Resources */,
+				890ED26E166DCE1D00D226BB /* localimage1.gif in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -382,6 +386,7 @@
 				896158F0166C955C00776B4D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
