@@ -521,6 +521,17 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
     return [str autorelease];
 }
 
+- (NSString *)faceFileName:(NSString *)elemName {
+    NSScanner *scanner = [NSScanner scannerWithString:elemName];
+    if ([scanner scanUpToString:@"/" intoString:nil]) {
+        [scanner scanString:@"/" intoString:nil];
+        NSString *fileName = nil;
+        if ([scanner scanUpToString:@"." intoString:&fileName])
+            return fileName;
+    }
+    return elemName;
+}
+
 - (void)processLinkClose:(FTCoreTextNode *)currentSupernode tagRange:(NSRange)tagRange processedString:(NSMutableString *)processedString
 {
     //replace active string with url text
@@ -611,7 +622,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
         }
         else {
             // if can't load the local image, just show the element.
-            lines = elementContent;
+            lines = [self faceFileName:elementContent];
         }
     }
     if (img) {
@@ -1299,7 +1310,8 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    if (self.delegate && [self.delegate respondsToSelector:@selector(coreTextView:receivedTouchOnData:)]) {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(coreTextView:receivedTouchOnData:)])
+    {
         CGPoint point = [(UITouch *)[touches anyObject] locationInView:self];
         NSDictionary *data = [self dataForPoint:point];
         if (data && data.count > 0) {
