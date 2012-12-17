@@ -1,5 +1,6 @@
+## 效果图如下：
+![pic.twitter.com/k0HWKmVD](https://pbs.twimg.com/media/A-SCwTHCEAAVK7j.png:large)
 
-![](http://pic.twitter.com/k0HWKmVD)
 ## 概要
 这个库是来自FTCoreText，原项目已经好久不更新了，里面还有不少的BUG，而且我自己有一些特殊的需求，于是新开了此项目。添加了一个支持从远程下载照片的功能。
 ## 用法
