@@ -29,6 +29,7 @@
     [coreTextView setDelegate:self];
 	[coreTextView fitToSuggestedHeight];
     [scrollView addSubview:coreTextView];
+    NSLog(@"coreText frame:%@", NSStringFromCGRect(coreTextView.frame));
     [scrollView setContentSize:CGSizeMake(CGRectGetWidth(self.view.bounds), CGRectGetHeight(coreTextView.frame) + 40)];
 }
 
