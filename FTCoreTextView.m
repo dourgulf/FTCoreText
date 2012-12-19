@@ -509,15 +509,21 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
     }
 }
 
-- (NSString *)spaceForEmotionImage:(UIImage *)image withFont:(UIFont *)font{
-    NSMutableString *str = [[NSMutableString alloc] init];
-    [str appendString:@" "];
-    CGFloat spaceWidth = [str sizeWithFont:font].width;
-    int count = (int)(image.size.height/spaceWidth);
-    for (int i=0; i<count; ++i) {
-        [str appendString:@" "];
+- (NSString *)spaceForEmotionImage:(UIImage *)image withStyle:(FTCoreTextStyle *)style{
+    NSString *fillChar;
+    if (!style.color && style.color != [UIColor clearColor]) {
+        fillChar = @" ";
     }
-    [str appendString:@" "];
+    else {
+        fillChar = @"-";
+        style.color = [UIColor clearColor];
+    }
+    NSMutableString *str = [[NSMutableString alloc] init];
+    CGFloat spaceWidth = [fillChar sizeWithFont:style.font].width;
+    int count = (int)ceil((image.size.height/spaceWidth));
+    for (int i=0; i<count; ++i) {
+        [str appendString:fillChar];
+    }
     return [str autorelease];
 }
 
@@ -618,7 +624,7 @@ UITextAlignment UITextAlignmentFromCoreTextAlignment(FTCoreTextAlignement alignm
         // local image, normally it's an emotion image
         img = [UIImage imageNamed:elementContent];
         if (img) {
-            lines = [self spaceForEmotionImage:img withFont:currentSupernode.style.font];
+            lines = [self spaceForEmotionImage:img withStyle:currentSupernode.style];
         }
         else {
             // if can't load the local image, just show the element.
